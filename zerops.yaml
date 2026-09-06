@@ -2,7 +2,7 @@ zerops:
   # Production — vendor deps into ./vendor, ship a minimal artifact, run the
   # app as a long-lived worker. The Slack app runs in Socket Mode (outbound
   # websocket), so it is not an HTTP service — no ports / readiness check.
-  - setup: prod
+  - setup: slackgrayoffice
     build:
       base: python@3.11
 

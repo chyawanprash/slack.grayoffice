@@ -1,0 +1,60 @@
+zerops:
+  # Production — vendor deps into ./vendor, ship a minimal artifact, run the
+  # app as a long-lived worker. The Slack app runs in Socket Mode (outbound
+  # websocket), so it is not an HTTP service — no ports / readiness check.
+  - setup: prod
+    build:
+      base: python@3.11
+
+      buildCommands:
+        # Install every dependency into ./vendor so the packages travel with
+        # the artifact to the runtime container (no system-Python pollution,
+        # matches cache + deployFiles).
+        - pip install --target=./vendor -r requirements.txt
+
+      deployFiles:
+        - ./app.py
+        - ./requirements.txt
+        - ./vendor
+
+      # Reuse ./vendor across builds — pip skips packages already present.
+      cache:
+        - vendor
+
+    run:
+      base: python@3.11
+
+      envVariables:
+        # Point Python's module search at the deployed vendor dir.
+        PYTHONPATH: /var/www/vendor
+        # Set as service env variables (secret) in Zerops — do NOT commit:
+        #   SLACK_BOT_TOKEN, SLACK_APP_TOKEN,
+        #   GRAYOFFICE_URL, BOT_INGEST_TOKEN
+
+      # Long-running worker. Zerops keeps the process up and restarts it if it
+      # exits. slack-bolt's SocketModeHandler reconnects on its own.
+      start: python app.py
+
+  # Development — deploy the whole tree for SSH-based iteration. The container
+  # stays alive without starting the app; start it by hand after SSH:
+  #   PYTHONPATH=/var/www/vendor python app.py
+  - setup: dev
+    build:
+      base: python@3.11
+
+      buildCommands:
+        - pip install --target=./vendor -r requirements.txt
+
+      deployFiles:
+        - ./
+
+      cache:
+        - vendor
+
+    run:
+      base: python@3.11
+
+      envVariables:
+        PYTHONPATH: /var/www/vendor
+
+      start: zsc noop --silent

@@ -15,8 +15,11 @@ import threading
 import time
 
 import requests
+from dotenv import load_dotenv
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
+
+load_dotenv()
 
 GRAYOFFICE_URL = os.getenv("GRAYOFFICE_URL", "http://localhost:5173").rstrip("/")
 BOT_INGEST_TOKEN = os.environ["BOT_INGEST_TOKEN"]
